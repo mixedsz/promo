@@ -210,3 +210,13 @@ elseif Config.Framework == 2 then
     end)
 
 end
+
+-- Relay: server broadcasts this to all clients so lb-phone export fires locally on every phone
+RegisterNetEvent('businessPromotion:phoneNotify')
+AddEventHandler('businessPromotion:phoneNotify', function(app, title, content)
+    exports['lb-phone']:SendNotification({
+        app     = app,
+        title   = title,
+        content = content,
+    })
+end)
