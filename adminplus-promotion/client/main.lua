@@ -60,7 +60,13 @@ if Config.Framework == 1 then
                         return
                     end
 
-                    if Config.RequiredGrade[jobName] > playerData.job.grade then
+                    -- ESX legacy stores grade as a number; newer ESX stores it as a
+                    -- table {name,label} with the numeric index in grade_index
+                    local jobGrade = type(playerData.job.grade) == 'number'
+                        and playerData.job.grade
+                        or (playerData.job.grade_index or 0)
+
+                    if Config.RequiredGrade[jobName] > jobGrade then
                         lib.notify({
                             title       = Config.Strings.business_promotion,
                             description = Config.Strings.not_required_job_grade,
