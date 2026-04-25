@@ -60,13 +60,15 @@ if Config.Framework == 1 then
                         return
                     end
 
-                    -- ESX legacy stores grade as a number; newer ESX stores it as a
-                    -- table {name,label} with the numeric index in grade_index
-                    local jobGrade = type(playerData.job.grade) == 'number'
+                    -- ESX legacy: job.grade is a number. Newer ESX: job.grade is a
+                    -- table and the numeric index lives in job.grade_index.
+                    local jobGrade    = type(playerData.job.grade) == 'number'
                         and playerData.job.grade
                         or (playerData.job.grade_index or 0)
+                    -- Jobs not listed in RequiredGrade default to 0 (all grades allowed)
+                    local reqGrade    = Config.RequiredGrade[jobName] or 0
 
-                    if Config.RequiredGrade[jobName] > jobGrade then
+                    if reqGrade > jobGrade then
                         lib.notify({
                             title       = Config.Strings.business_promotion,
                             description = Config.Strings.not_required_job_grade,
@@ -104,50 +106,8 @@ if Config.Framework == 1 then
                         return
                     end
 
-                    if Config.Ox_LibNotify or Config.ChatMessage then
-                        TriggerServerEvent('businessPromotion:showNotification', playerName, playerData.job.label, message)
-                    end
-
-                    if Config.LbPhone.Twitter then
-                        exports['lb-phone']:SendNotification({
-                            app     = 'Twitter',
-                            title   = playerName .. ' - ' .. playerData.job.label,
-                            content = message,
-                        })
-                    end
-
-                    if Config.LbPhone.Instagram then
-                        exports['lb-phone']:SendNotification({
-                            app     = 'Instagram',
-                            title   = playerName .. ' - ' .. playerData.job.label,
-                            content = message,
-                        })
-                    end
-
-                    if Config.LbPhone.Marketplace then
-                        exports['lb-phone']:SendNotification({
-                            app     = 'Marketplace',
-                            title   = playerName .. ' - ' .. playerData.job.label,
-                            content = message,
-                        })
-                    end
-
-                    if Config.LbPhone.Mail then
-                        exports['lb-phone']:SendNotification({
-                            app     = 'Mail',
-                            title   = playerName .. ' - ' .. playerData.job.label,
-                            content = message,
-                        })
-                    end
-
-                    if Config.LbPhone.YellowPages then
-                        exports['lb-phone']:SendNotification({
-                            app     = 'YellowPages',
-                            title   = playerName .. ' - ' .. playerData.job.label,
-                            content = message,
-                        })
-                    end
-
+                    -- Server handles all broadcasting (chat, ox_lib, lb-phone to all players)
+                    TriggerServerEvent('businessPromotion:showNotification', playerName, playerData.job.label, message)
                     TriggerServerEvent('businessPromotion:removeMoney', cost)
 
                     onCooldown = true
@@ -190,7 +150,10 @@ elseif Config.Framework == 2 then
                         return
                     end
 
-                    if Config.RequiredGrade[jobName] > playerData.job.grade.level then
+                    -- Jobs not listed in RequiredGrade default to 0 (all grades allowed)
+                    local reqGrade = Config.RequiredGrade[jobName] or 0
+
+                    if reqGrade > playerData.job.grade.level then
                         lib.notify({
                             title       = Config.Strings.business_promotion,
                             description = Config.Strings.not_required_job_grade,
@@ -228,50 +191,8 @@ elseif Config.Framework == 2 then
                         return
                     end
 
-                    if Config.Ox_LibNotify or Config.ChatMessage then
-                        TriggerServerEvent('businessPromotion:showNotification', playerName, playerData.job.label, message)
-                    end
-
-                    if Config.LbPhone.Twitter then
-                        exports['lb-phone']:SendNotification({
-                            app     = 'Twitter',
-                            title   = playerName .. ' - ' .. playerData.job.label,
-                            content = message,
-                        })
-                    end
-
-                    if Config.LbPhone.Instagram then
-                        exports['lb-phone']:SendNotification({
-                            app     = 'Instagram',
-                            title   = playerName .. ' - ' .. playerData.job.label,
-                            content = message,
-                        })
-                    end
-
-                    if Config.LbPhone.Marketplace then
-                        exports['lb-phone']:SendNotification({
-                            app     = 'Marketplace',
-                            title   = playerName .. ' - ' .. playerData.job.label,
-                            content = message,
-                        })
-                    end
-
-                    if Config.LbPhone.Mail then
-                        exports['lb-phone']:SendNotification({
-                            app     = 'Mail',
-                            title   = playerName .. ' - ' .. playerData.job.label,
-                            content = message,
-                        })
-                    end
-
-                    if Config.LbPhone.YellowPages then
-                        exports['lb-phone']:SendNotification({
-                            app     = 'YellowPages',
-                            title   = playerName .. ' - ' .. playerData.job.label,
-                            content = message,
-                        })
-                    end
-
+                    -- Server handles all broadcasting (chat, ox_lib, lb-phone to all players)
+                    TriggerServerEvent('businessPromotion:showNotification', playerName, playerData.job.label, message)
                     TriggerServerEvent('businessPromotion:removeMoney', cost)
 
                     onCooldown = true

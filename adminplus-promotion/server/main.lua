@@ -32,6 +32,19 @@ local function broadcastPromotion(playerName, jobLabel, message)
         })
     end
 
+    -- lb-phone: broadcast to every connected player's phone
+    local phoneTitle = playerName .. ' - ' .. jobLabel
+    local apps = { 'Twitter', 'Instagram', 'Marketplace', 'Mail', 'YellowPages' }
+    for _, app in ipairs(apps) do
+        if Config.LbPhone[app] then
+            TriggerClientEvent('lb-phone:client:sendNotification', -1, {
+                app     = app,
+                title   = phoneTitle,
+                content = message,
+            })
+        end
+    end
+
     print(('[AdminPlus Promotion] %s (%s): %s'):format(playerName, jobLabel, message))
 end
 
