@@ -20,7 +20,7 @@ local LB_APP = {
 }
 
 local function broadcastPromotion(src, playerName, jobLabel, message)
-    local title     = Config.Strings.business_promotion2 .. jobLabel
+    local title      = Config.Strings.business_promotion2 .. jobLabel
     local phoneTitle = playerName .. ' - ' .. jobLabel
 
     if Config.ChatMessage then
@@ -31,38 +31,53 @@ local function broadcastPromotion(src, playerName, jobLabel, message)
         })
     end
 
+    -- Notification matches the original style: title, name, job label, bullet message
     if Config.Ox_LibNotify then
         TriggerClientEvent('ox_lib:notify', -1, {
             title       = title,
-            description = playerName .. ': ' .. message,
+            description = playerName .. '\n' .. Config.Strings.job .. jobLabel .. '\n\n• ' .. message,
             position    = Config.NotifyPosition,
             icon        = Config.BusinessIcon,
+            iconColor   = '#f59e0b',
             type        = 'inform',
             duration    = 10000,
         })
     end
 
-    -- lb-phone ── Twitter/Birdy: PostBirdy creates a real post in the feed
-    if Config.LbPhone.Twitter and src then
-        local phoneNumber = exports['lb-phone']:GetEquippedPhoneNumber(src)
+    -- Fetch phone number once — used by multiple lb-phone integrations
+    local phoneNumber = src and exports['lb-phone']:GetEquippedPhoneNumber(src) or nil
+
+    -- Birdy (Twitter): PostBirdy creates an actual post in the Birdy feed
+    if Config.LbPhone.Twitter then
+        local posted = false
         if phoneNumber then
             local username = exports['lb-phone']:GetSocialMediaUsername(phoneNumber, 'birdy')
             if username then
                 exports['lb-phone']:PostBirdy(username, phoneTitle .. '\n' .. message)
-            else
-                exports['lb-phone']:NotifyEveryone('online', {
-                    app     = LB_APP.Twitter,
-                    title   = phoneTitle,
-                    content = message,
-                })
+                posted = true
             end
+        end
+        if not posted then
+            exports['lb-phone']:NotifyEveryone('online', {
+                app     = LB_APP.Twitter,
+                title   = phoneTitle,
+                content = message,
+            })
         end
     end
 
-    -- lb-phone ── YellowPages: insert directly into phone_yellow_pages_posts so
-    -- the listing actually appears in the Pages feed, then notify everyone
-    if Config.LbPhone.YellowPages and src then
-        local phoneNumber = exports['lb-phone']:GetEquippedPhoneNumber(src)
+    -- Instagram: no server post API — send notification to all phones
+    if Config.LbPhone.Instagram then
+        exports['lb-phone']:NotifyEveryone('online', {
+            app     = LB_APP.Instagram,
+            title   = phoneTitle,
+            content = message,
+        })
+    end
+
+    -- YellowPages: insert directly into phone_yellow_pages_posts so the listing
+    -- appears in the Pages feed, then notify everyone
+    if Config.LbPhone.YellowPages then
         if phoneNumber then
             MySQL.insert(
                 'INSERT INTO phone_yellow_pages_posts (phone_number, title, description, attachment, price, timestamp) VALUES (?, ?, ?, NULL, NULL, NOW())',
@@ -76,16 +91,22 @@ local function broadcastPromotion(src, playerName, jobLabel, message)
         })
     end
 
-    -- lb-phone ── other apps: NotifyEveryone sends a notification to every online player
-    local notifyApps = { 'Instagram', 'Marketplace', 'Mail' }
-    for _, key in ipairs(notifyApps) do
-        if Config.LbPhone[key] then
-            exports['lb-phone']:NotifyEveryone('online', {
-                app     = LB_APP[key],
-                title   = phoneTitle,
-                content = message,
-            })
-        end
+    -- Marketplace: no server post API — send notification to all phones
+    if Config.LbPhone.Marketplace then
+        exports['lb-phone']:NotifyEveryone('online', {
+            app     = LB_APP.Marketplace,
+            title   = phoneTitle,
+            content = message,
+        })
+    end
+
+    -- Mail: send notification to all phones
+    if Config.LbPhone.Mail then
+        exports['lb-phone']:NotifyEveryone('online', {
+            app     = LB_APP.Mail,
+            title   = phoneTitle,
+            content = message,
+        })
     end
 
     print(('[AdminPlus Promotion] %s (%s): %s'):format(playerName, jobLabel, message))
