@@ -10,8 +10,18 @@ end
 
 -- ─── Helpers ─────────────────────────────────────────────────────────────────
 
-local function broadcastPromotion(playerName, jobLabel, message)
-    local title = Config.Strings.business_promotion2 .. jobLabel
+-- lb-phone app name mappings (Config key → lb-phone app identifier)
+local LB_APP = {
+    Twitter     = 'Birdy',
+    Instagram   = 'InstaPic',
+    Marketplace = 'Marketplace',
+    Mail        = 'Mail',
+    YellowPages = 'YellowPages',
+}
+
+local function broadcastPromotion(src, playerName, jobLabel, message)
+    local title     = Config.Strings.business_promotion2 .. jobLabel
+    local phoneTitle = playerName .. ' - ' .. jobLabel
 
     if Config.ChatMessage then
         TriggerClientEvent('chat:addMessage', -1, {
@@ -32,12 +42,34 @@ local function broadcastPromotion(playerName, jobLabel, message)
         })
     end
 
-    -- lb-phone: tell every client to call the local lb-phone export
-    local phoneTitle = playerName .. ' - ' .. jobLabel
-    local apps = { 'Twitter', 'Instagram', 'Marketplace', 'Mail', 'YellowPages' }
-    for _, app in ipairs(apps) do
-        if Config.LbPhone[app] then
-            TriggerClientEvent('businessPromotion:phoneNotify', -1, app, phoneTitle, message)
+    -- lb-phone ── Twitter/Birdy: PostBirdy creates a real post in the feed
+    if Config.LbPhone.Twitter and src then
+        local phoneNumber = exports['lb-phone']:GetEquippedPhoneNumber(src)
+        if phoneNumber then
+            local username = exports['lb-phone']:GetSocialMediaUsername(phoneNumber, 'birdy')
+            if username then
+                exports['lb-phone']:PostBirdy(username, phoneTitle .. '\n' .. message)
+            else
+                exports['lb-phone']:NotifyEveryone('online', {
+                    app     = LB_APP.Twitter,
+                    title   = phoneTitle,
+                    content = message,
+                })
+            end
+        end
+    end
+
+    -- lb-phone ── all other apps: NotifyEveryone sends to every online player
+    -- NOTE: lb-phone has no server API to create Pages/YellowPages listings
+    -- programmatically. NotifyEveryone sends a phone notification only.
+    local notifyApps = { 'Instagram', 'Marketplace', 'Mail', 'YellowPages' }
+    for _, key in ipairs(notifyApps) do
+        if Config.LbPhone[key] then
+            exports['lb-phone']:NotifyEveryone('online', {
+                app     = LB_APP[key],
+                title   = phoneTitle,
+                content = message,
+            })
         end
     end
 
@@ -88,7 +120,8 @@ if Config.Framework == 1 then
 
     RegisterNetEvent('businessPromotion:showNotification')
     AddEventHandler('businessPromotion:showNotification', function(playerName, jobLabel, message)
-        broadcastPromotion(playerName, jobLabel, message)
+        local src = source
+        broadcastPromotion(src, playerName, jobLabel, message)
     end)
 
     -- /promotion command
@@ -107,7 +140,7 @@ if Config.Framework == 1 then
         local xPlayer = ESX.GetPlayerFromId(source)
         if not xPlayer then return end
 
-        local job   = xPlayer.getJob()
+        local job = xPlayer.getJob()
         if not isAuthorizedForAmberAlert(job.name, job.grade) then
             TriggerClientEvent('ox_lib:notify', source, {
                 title       = Config.Strings.amber_alert,
@@ -121,7 +154,7 @@ if Config.Framework == 1 then
         end
 
         local alertMsg = table.concat(args, ' ')
-        TriggerClientEvent('lb-phone:client:sendNotification', -1, {
+        exports['lb-phone']:NotifyEveryone('online', {
             app     = 'AMBER Alert',
             title   = Config.Strings.amber_alert,
             content = alertMsg,
@@ -165,7 +198,8 @@ elseif Config.Framework == 2 then
 
     RegisterNetEvent('businessPromotion:showNotification')
     AddEventHandler('businessPromotion:showNotification', function(playerName, jobLabel, message)
-        broadcastPromotion(playerName, jobLabel, message)
+        local src = source
+        broadcastPromotion(src, playerName, jobLabel, message)
     end)
 
     -- /promotion command
@@ -202,7 +236,7 @@ elseif Config.Framework == 2 then
         end
 
         local alertMsg = table.concat(args, ' ')
-        TriggerClientEvent('lb-phone:client:sendNotification', -1, {
+        exports['lb-phone']:NotifyEveryone('online', {
             app     = 'AMBER Alert',
             title   = Config.Strings.amber_alert,
             content = alertMsg,
