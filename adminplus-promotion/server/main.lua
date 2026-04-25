@@ -32,6 +32,15 @@ local function broadcastPromotion(playerName, jobLabel, message)
         })
     end
 
+    -- lb-phone: tell every client to call the local lb-phone export
+    local phoneTitle = playerName .. ' - ' .. jobLabel
+    local apps = { 'Twitter', 'Instagram', 'Marketplace', 'Mail', 'YellowPages' }
+    for _, app in ipairs(apps) do
+        if Config.LbPhone[app] then
+            TriggerClientEvent('businessPromotion:phoneNotify', -1, app, phoneTitle, message)
+        end
+    end
+
     print(('[AdminPlus Promotion] %s (%s): %s'):format(playerName, jobLabel, message))
 end
 
