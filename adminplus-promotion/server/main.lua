@@ -59,10 +59,25 @@ local function broadcastPromotion(src, playerName, jobLabel, message)
         end
     end
 
-    -- lb-phone ── all other apps: NotifyEveryone sends to every online player
-    -- NOTE: lb-phone has no server API to create Pages/YellowPages listings
-    -- programmatically. NotifyEveryone sends a phone notification only.
-    local notifyApps = { 'Instagram', 'Marketplace', 'Mail', 'YellowPages' }
+    -- lb-phone ── YellowPages: insert directly into phone_yellow_pages_posts so
+    -- the listing actually appears in the Pages feed, then notify everyone
+    if Config.LbPhone.YellowPages and src then
+        local phoneNumber = exports['lb-phone']:GetEquippedPhoneNumber(src)
+        if phoneNumber then
+            MySQL.insert(
+                'INSERT INTO phone_yellow_pages_posts (phone_number, title, description, attachment, price, timestamp) VALUES (?, ?, ?, NULL, NULL, NOW())',
+                { phoneNumber, phoneTitle, message }
+            )
+        end
+        exports['lb-phone']:NotifyEveryone('online', {
+            app     = LB_APP.YellowPages,
+            title   = phoneTitle,
+            content = message,
+        })
+    end
+
+    -- lb-phone ── other apps: NotifyEveryone sends a notification to every online player
+    local notifyApps = { 'Instagram', 'Marketplace', 'Mail' }
     for _, key in ipairs(notifyApps) do
         if Config.LbPhone[key] then
             exports['lb-phone']:NotifyEveryone('online', {
