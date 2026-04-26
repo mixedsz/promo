@@ -49,7 +49,7 @@ local function broadcastPromotion(src, playerName, jobLabel, message)
     if Config.Ox_LibNotify then
         TriggerClientEvent('ox_lib:notify', -1, {
             title       = title,
-            description = playerName .. '\n\n' .. Config.Strings.job .. jobLabel .. '\n\194\160\n• ' .. message,
+            description = playerName .. '\n\n' .. Config.Strings.job .. jobLabel .. '\n\n- ' .. message,
             position    = Config.NotifyPosition,
             icon        = Config.BusinessIcon,
             iconColor   = '#f59e0b',
