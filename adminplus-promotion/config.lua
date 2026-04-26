@@ -16,7 +16,7 @@ Config.BusinessIcon = 'rectangle-ad'
 
 -- amber alert (player must have phone to receive the messages)
 -- LBPHONE INTEGRATION
-Config.AmberAlert = false
+Config.AmberAlert = true
 Config.AmberAlertCommand = 'amberalert'
 Config.AuthorizedJobs = { -- list of jobs that can use the command and required grade
     [1] = {job = 'police', grade = 0},
