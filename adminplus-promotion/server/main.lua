@@ -49,7 +49,7 @@ local function broadcastPromotion(src, playerName, jobLabel, message)
     if Config.Ox_LibNotify then
         TriggerClientEvent('ox_lib:notify', -1, {
             title       = title,
-            description = playerName .. '\n' .. Config.Strings.job .. jobLabel .. '\n\n• ' .. message,
+            description = playerName .. '\n\n' .. Config.Strings.job .. jobLabel .. '\n\n- ' .. message,
             position    = Config.NotifyPosition,
             icon        = Config.BusinessIcon,
             iconColor   = '#f59e0b',
@@ -95,7 +95,7 @@ local function broadcastPromotion(src, playerName, jobLabel, message)
     if Config.LbPhone.YellowPages then
         if phoneNumber then
             local insertId = MySQL.insert.await(
-                'INSERT INTO phone_yellow_pages_posts (`number`, title, description, attachment, price, timestamp) VALUES (?, ?, ?, NULL, NULL, NOW())',
+                'INSERT INTO phone_yellow_pages_posts (phone_number, title, description, attachment, price, timestamp) VALUES (?, ?, ?, NULL, NULL, NOW())',
                 { phoneNumber, phoneTitle, message }
             )
             if insertId then
