@@ -67,13 +67,22 @@ local function broadcastPromotion(src, playerName, jobLabel, message)
         if phoneNumber then
             local username = exports['lb-phone']:GetSocialMediaUsername(phoneNumber, 'birdy')
             if username then
-                exports['lb-phone']:PostBirdy(username, phoneTitle .. '\n' .. message)
-                lbPhoneSendAll('Birdy', phoneTitle, message)
-                posted = true
+                local success, postId = exports['lb-phone']:PostBirdy(username, phoneTitle .. '\n' .. message, nil, nil, nil)
+                if success then
+                    print(('[AdminPlus Promotion] Birdy post created: %s (id: %s)'):format(username, tostring(postId)))
+                    posted = true
+                else
+                    print(('[AdminPlus Promotion] Birdy PostBirdy failed for username: %s'):format(username))
+                end
+            else
+                print(('[AdminPlus Promotion] Birdy: no username found for phone %s'):format(phoneNumber))
             end
+        else
+            print('[AdminPlus Promotion] Birdy: player has no equipped phone number')
         end
+        lbPhoneSendAll('Birdy', phoneTitle, message)
         if not posted then
-            lbPhoneSendAll('Birdy', phoneTitle, message)
+            print('[AdminPlus Promotion] Birdy: fell back to notification-only (no post created)')
         end
     end
 
@@ -85,10 +94,18 @@ local function broadcastPromotion(src, playerName, jobLabel, message)
     -- YellowPages: DB insert creates actual Pages listing + notification to all phones
     if Config.LbPhone.YellowPages then
         if phoneNumber then
-            MySQL.insert(
-                'INSERT INTO phone_yellow_pages_posts (phone_number, title, description, attachment, price, timestamp) VALUES (?, ?, ?, NULL, NULL, NOW())',
+            local insertId = MySQL.insert.await(
+                'INSERT INTO phone_yellow_pages_posts (`number`, title, description, attachment, price, timestamp) VALUES (?, ?, ?, NULL, NULL, NOW())',
                 { phoneNumber, phoneTitle, message }
             )
+            if insertId then
+                TriggerClientEvent('lb-phone:pages:newPost', -1, {
+                    id          = tostring(insertId),
+                    number      = phoneNumber,
+                    title       = phoneTitle,
+                    description = message,
+                })
+            end
         end
         lbPhoneSendAll('YellowPages', phoneTitle, message)
     end
