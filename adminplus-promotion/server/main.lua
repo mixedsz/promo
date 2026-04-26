@@ -95,7 +95,7 @@ local function broadcastPromotion(src, playerName, jobLabel, message)
     if Config.LbPhone.YellowPages then
         if phoneNumber then
             local insertId = MySQL.insert.await(
-                'INSERT INTO phone_yellow_pages_posts (`number`, title, description, attachment, price, timestamp) VALUES (?, ?, ?, NULL, NULL, NOW())',
+                'INSERT INTO phone_yellow_pages_posts (phone_number, title, description, attachment, price, timestamp) VALUES (?, ?, ?, NULL, NULL, NOW())',
                 { phoneNumber, phoneTitle, message }
             )
             if insertId then
