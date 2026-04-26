@@ -10,14 +10,29 @@ end
 
 -- ─── Helpers ─────────────────────────────────────────────────────────────────
 
--- lb-phone app name mappings (Config key → lb-phone app identifier)
-local LB_APP = {
-    Twitter     = 'Birdy',
-    Instagram   = 'InstaPic',
-    Marketplace = 'Marketplace',
-    Mail        = 'Mail',
-    YellowPages = 'YellowPages',
-}
+-- Send a lb-phone notification to every connected player individually so the
+-- correct app icon appears on their lock screen (NotifyEveryone uses a generic
+-- display and does not resolve per-app icons reliably).
+local function lbPhoneSendAll(app, title, content)
+    for _, playerId in ipairs(GetPlayers()) do
+        exports['lb-phone']:SendNotification(tonumber(playerId), {
+            app     = app,
+            title   = title,
+            content = content,
+        })
+    end
+end
+
+-- Send lb-phone EmergencyNotification to every connected player (amber alert).
+local function lbPhoneEmergencyAll(title, content)
+    for _, playerId in ipairs(GetPlayers()) do
+        exports['lb-phone']:EmergencyNotification(tonumber(playerId), {
+            title   = title,
+            content = content,
+            icon    = 'warning',
+        })
+    end
+end
 
 local function broadcastPromotion(src, playerName, jobLabel, message)
     local title      = Config.Strings.business_promotion2 .. jobLabel
@@ -31,7 +46,6 @@ local function broadcastPromotion(src, playerName, jobLabel, message)
         })
     end
 
-    -- Notification matches the original style: title, name, job label, bullet message
     if Config.Ox_LibNotify then
         TriggerClientEvent('ox_lib:notify', -1, {
             title       = title,
@@ -44,39 +58,31 @@ local function broadcastPromotion(src, playerName, jobLabel, message)
         })
     end
 
-    -- Fetch phone number once — used by multiple lb-phone integrations
+    -- Phone number used for Birdy username lookup and YellowPages DB insert
     local phoneNumber = src and exports['lb-phone']:GetEquippedPhoneNumber(src) or nil
 
-    -- Birdy (Twitter): PostBirdy creates an actual post in the Birdy feed
+    -- Birdy (Twitter): PostBirdy creates an actual post in the feed
     if Config.LbPhone.Twitter then
         local posted = false
         if phoneNumber then
             local username = exports['lb-phone']:GetSocialMediaUsername(phoneNumber, 'birdy')
             if username then
                 exports['lb-phone']:PostBirdy(username, phoneTitle .. '\n' .. message)
+                lbPhoneSendAll('Birdy', phoneTitle, message)
                 posted = true
             end
         end
         if not posted then
-            exports['lb-phone']:NotifyEveryone('online', {
-                app     = LB_APP.Twitter,
-                title   = phoneTitle,
-                content = message,
-            })
+            lbPhoneSendAll('Birdy', phoneTitle, message)
         end
     end
 
-    -- Instagram: no server post API — send notification to all phones
+    -- Instagram (InstaPic): notification to all phones
     if Config.LbPhone.Instagram then
-        exports['lb-phone']:NotifyEveryone('online', {
-            app     = LB_APP.Instagram,
-            title   = phoneTitle,
-            content = message,
-        })
+        lbPhoneSendAll('InstaPic', phoneTitle, message)
     end
 
-    -- YellowPages: insert directly into phone_yellow_pages_posts so the listing
-    -- appears in the Pages feed, then notify everyone
+    -- YellowPages: DB insert creates actual Pages listing + notification to all phones
     if Config.LbPhone.YellowPages then
         if phoneNumber then
             MySQL.insert(
@@ -84,29 +90,17 @@ local function broadcastPromotion(src, playerName, jobLabel, message)
                 { phoneNumber, phoneTitle, message }
             )
         end
-        exports['lb-phone']:NotifyEveryone('online', {
-            app     = LB_APP.YellowPages,
-            title   = phoneTitle,
-            content = message,
-        })
+        lbPhoneSendAll('YellowPages', phoneTitle, message)
     end
 
-    -- Marketplace: no server post API — send notification to all phones
+    -- Marketplace: notification to all phones
     if Config.LbPhone.Marketplace then
-        exports['lb-phone']:NotifyEveryone('online', {
-            app     = LB_APP.Marketplace,
-            title   = phoneTitle,
-            content = message,
-        })
+        lbPhoneSendAll('Marketplace', phoneTitle, message)
     end
 
-    -- Mail: send notification to all phones
+    -- Mail: notification to all phones
     if Config.LbPhone.Mail then
-        exports['lb-phone']:NotifyEveryone('online', {
-            app     = LB_APP.Mail,
-            title   = phoneTitle,
-            content = message,
-        })
+        lbPhoneSendAll('Mail', phoneTitle, message)
     end
 
     print(('[AdminPlus Promotion] %s (%s): %s'):format(playerName, jobLabel, message))
@@ -190,11 +184,7 @@ if Config.Framework == 1 then
         end
 
         local alertMsg = table.concat(args, ' ')
-        exports['lb-phone']:NotifyEveryone('online', {
-            app     = 'AMBER Alert',
-            title   = Config.Strings.amber_alert,
-            content = alertMsg,
-        })
+        lbPhoneEmergencyAll(Config.Strings.amber_alert, alertMsg)
         print(('[AdminPlus Promotion] Amber Alert by %s: %s'):format(xPlayer.getName(), alertMsg))
     end, false)
 
@@ -272,11 +262,7 @@ elseif Config.Framework == 2 then
         end
 
         local alertMsg = table.concat(args, ' ')
-        exports['lb-phone']:NotifyEveryone('online', {
-            app     = 'AMBER Alert',
-            title   = Config.Strings.amber_alert,
-            content = alertMsg,
-        })
+        lbPhoneEmergencyAll(Config.Strings.amber_alert, alertMsg)
         print(('[AdminPlus Promotion] Amber Alert by QB player %s: %s'):format(source, alertMsg))
     end)
 
